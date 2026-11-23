@@ -100,7 +100,26 @@ function tovabb() {
       <span class="nyil">⌄</span>
     </button>
   </main>
+  <section class="bemutatkozas">
+    <div class="szoveg">
+      <h2>Mi az a Merre utazzak?</h2>
+      <p>
+        Magyar nyelvű utazásinspiráló és -tervező oldal. Segít kitalálni, hová
+        utazz, megírja a napi programot, és egy helyen tartja a bakancslistádat
+        és az emlékeidet. Az árak és a repülési idők magyarországi utazóra
+        vonatkoznak.
+      </p>
+    </div>
 
+    <div class="funkciok">
+      <div v-for="(f, i) in funkciok" :key="i" class="funkcio">
+        <span class="szam">0{{ i + 1 }}</span>
+        <h3>{{ f.cim }}</h3>
+        <p>{{ f.leiras }}</p>
+      </div>
+    </div>
+  </section>
+  
   <section ref="masodik" class="masodik">
     <div class="fejlec">
       <div>
@@ -124,26 +143,6 @@ function tovabb() {
           <span v-for="c in ut.cimkek" :key="c">{{ c }}</span>
         </div>
       </article>
-    </div>
-  </section>
-
-  <section class="bemutatkozas">
-    <div class="szoveg">
-      <h2>Mi az a Merre utazzak?</h2>
-      <p>
-        Magyar nyelvű utazásinspiráló és -tervező oldal. Segít kitalálni, hová
-        utazz, megírja a napi programot, és egy helyen tartja a bakancslistádat
-        és az emlékeidet. Az árak és a repülési idők magyarországi utazóra
-        vonatkoznak.
-      </p>
-    </div>
-
-    <div class="funkciok">
-      <div v-for="(f, i) in funkciok" :key="i" class="funkcio">
-        <span class="szam">0{{ i + 1 }}</span>
-        <h3>{{ f.cim }}</h3>
-        <p>{{ f.leiras }}</p>
-      </div>
     </div>
   </section>
 
