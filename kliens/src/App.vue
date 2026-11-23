@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import Menu from './components/Menu.vue'
+import Footer from './components/Footer.vue'
+import Kviz from './components/Kviz.vue'
 
 const masodik = ref<HTMLElement | null>(null)
+const kvizNyitva = ref(false)
 
 const ures = { kep: '', cimke: '', nev: '', orszag: '', idojaras: '', ar: '', cimkek: [] as string[] }
 const utak = Array.from({ length: 5 }, () => ures)
@@ -10,7 +13,7 @@ const utak = Array.from({ length: 5 }, () => ures)
 const funkciok = [
   { cim: 'Kvíz', leiras: '6 kérdés után megmutatjuk a három legjobb úti célt egyezési százalékkal, szezonnal és költséggel.' },
   { cim: 'Húzogató', leiras: 'Jobbra húzod, ami tetszik, balra, ami nem. Gombokkal és a nyilakkal is működik.' },
-  { cim: 'Úti célok', leiras: '42 hely, keresés névre, országra vagy hangulatra, költségszintekkel és repülési idővel.' },
+  { cim: 'Úti célok', leiras: 'Rengeteg hely, keresés névre, országra vagy hangulatra, költségszintekkel és repülési idővel.' },
   { cim: 'Tervező', leiras: 'Napi program 1–14 napra, amit szabadon átírhatsz, bővíthetsz és elmentheted.' },
   { cim: 'Bakancslista és utazások', leiras: 'Gyűjtsd egy helyen a vágyott helyeket, a „Voltam ott” gombbal pedig átkerülnek az utazásaid közé.' },
 ]
@@ -53,7 +56,7 @@ onMounted(() => {
 onUnmounted(() => clearInterval(idozito))
 
 function kviz() {
-  alert('Kvíz indul...')
+  kvizNyitva.value = true
 }
 
 function huzogato() {
@@ -143,6 +146,21 @@ function tovabb() {
       </div>
     </div>
   </section>
+
+  <section class="felhivas">
+    <h2>Készen állsz a következő utazásra?</h2>
+    <p>Válaszolj 6 rövid kérdésre, és megmutatjuk, hová érdemes utaznod.</p>
+    <button class="gomb" @click="kviz">Kitöltöm a kvízt!</button>
+  </section>
+
+  <section class="huzogato">
+    <h2>Bővíteni akarod a bakancs listád?</h2>
+    <p>Huzd jobbra azokat az utazasokat amik teteszenek és balra azokat amik nem.</p>
+    <button class="gomb" @click="huzogato">Bővítem a bakancs listát!</button>
+  </section>
+  <Footer />
+
+  <Kviz v-if="kvizNyitva" @bezar="kvizNyitva = false" />
 </template>
 
 <style>
@@ -235,8 +253,8 @@ html, body, #app {
 .masodik {
   min-height: 100vh;
   padding: 4rem 2rem;
-  background: #f4f6f6;
-  color: #12222c;
+  background: white;
+  color: #000;
 }
 
 .fejlec {
@@ -256,7 +274,7 @@ html, body, #app {
 
 .fejlec p {
   margin: 0.5rem 0 0;
-  color: #4a5b66;
+  color: #000;
 }
 
 .osszes {
@@ -281,6 +299,7 @@ html, body, #app {
   position: relative;
   width: 15rem;
   padding: 0.7rem 0.7rem 1.2rem;
+  color: #000;
   background: white;
   border-radius: 24px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
@@ -361,7 +380,7 @@ html, body, #app {
   min-height: 1.2rem;
   margin: 0 0 0.8rem;
   font-weight: 700;
-  color: #4a5b66;
+  color: #000;
 }
 
 .cimkek {
@@ -374,6 +393,7 @@ html, body, #app {
   padding: 0.3rem 0.8rem;
   font-size: 0.8rem;
   font-weight: 600;
+  color: #000;
   background: #eef1f3;
   border-radius: 999px;
 }
@@ -384,8 +404,8 @@ html, body, #app {
   flex-wrap: wrap;
   gap: 4rem;
   padding: 5rem max(2rem, calc((100% - 70rem) / 2));
-  background: #12222c;
-  color: white;
+  background: white;
+  color: #000;
 }
 
 .szoveg {
@@ -401,7 +421,7 @@ html, body, #app {
   margin: 0;
   font-size: 1.1rem;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.75);
+  color: #000;
 }
 
 .funkciok {
@@ -413,8 +433,8 @@ html, body, #app {
 
 .funkcio {
   padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #f4f6f6;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 20px;
 }
 
@@ -425,7 +445,7 @@ html, body, #app {
 .szam {
   font-size: 1.2rem;
   font-weight: 800;
-  color: #ffc107;
+  color: #000;
 }
 
 .funkcio h3 {
@@ -435,7 +455,69 @@ html, body, #app {
 .funkcio p {
   margin: 0;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.75);
+  color: #000;
+}
+
+.felhivas {
+  padding: 5rem max(2rem, calc((100% - 70rem) / 2));
+  text-align: left;
+  color: #000;
+  background: white;
+}
+
+.felhivas h2 {
+  margin: 0 0 1rem;
+  font-size: 2.5rem;
+}
+
+.felhivas p {
+  margin: 0 0 2rem;
+  font-size: 1.1rem;
+  color: #000;
+}
+
+.felhivas .gomb {
+  color: white;
+  background: #12222c;
+  border: none;
+}
+
+.felhivas .gomb:hover {
+  background: #1f3a4a;
+}
+
+@media (max-width: 600px) {
+  .funkciok {
+    grid-template-columns: 1fr;
+  }
+}
+
+.huzogato {
+  padding: 5rem max(2rem, calc((100% - 70rem) / 2));
+  text-align: left;
+  color: #000;
+  background: white;
+}
+
+.huzogato h2 {
+  margin: 0 0 1rem;
+  font-size: 2.5rem;
+}
+
+.huzogato p {
+  margin: 0 0 2rem;
+  font-size: 1.1rem;
+  color: #000;
+}
+
+.huzogato .gomb {
+  color: white;
+  background: #12222c;
+  border: none;
+}
+
+.huzogato .gomb:hover {
+  background: #1f3a4a;
 }
 
 @media (max-width: 600px) {
