@@ -27,10 +27,14 @@ const pontok = [
 const repulo = ref({ x: 15, y: 25, szog: 0 })
 let idozito: number
 
+function veletlenPont() {
+  return pontok[Math.floor(Math.random() * pontok.length)]!
+}
+
 function kovetkezoPont() {
-  let uj = pontok[Math.floor(Math.random() * pontok.length)]
+  let uj = veletlenPont()
   while (uj.x === repulo.value.x && uj.y === repulo.value.y) {
-    uj = pontok[Math.floor(Math.random() * pontok.length)]
+    uj = veletlenPont()
   }
 
   const dx = ((uj.x - repulo.value.x) / 100) * window.innerWidth
