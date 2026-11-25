@@ -3,20 +3,39 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import Menu from './components/Menu.vue'
 import Footer from './components/Footer.vue'
 import Kviz from './components/Kviz.vue'
+import Bejelentkezes from './components/Bejelentkezes.vue'
+import Profil from './components/Profil.vue'
+import { lekeres } from './api'
+
+interface Ut {
+  id: number
+  nev: string
+  orszag: string
+  kep: string | null
+  cimke: string | null
+  idojaras: string | null
+  ar: number | null
+  cimkek: string[]
+}
 
 const masodik = ref<HTMLElement | null>(null)
 const kvizNyitva = ref(false)
-
-const ures = { kep: '', cimke: '', nev: '', orszag: '', idojaras: '', ar: '', cimkek: [] as string[] }
-const utak = Array.from({ length: 5 }, () => ures)
+const authNyitva = ref(false)
+const profilNyitva = ref(false)
+const utak = ref<Ut[]>([])
 
 const funkciok = [
   { cim: 'Kvíz', leiras: '6 kérdés után megmutatjuk a három legjobb úti célt egyezési százalékkal, szezonnal és költséggel.' },
-  { cim: 'Húzogató', leiras: 'Jobbra húzod, ami tetszik, balra, ami nem. Gombokkal és a nyilakkal is működik.' },
+  { cim: 'Felfedező', leiras: 'Jobbra húzod, ami tetszik, balra, ami nem. Gombokkal és a nyilakkal is működik.' },
   { cim: 'Úti célok', leiras: 'Rengeteg hely, keresés névre, országra vagy hangulatra, költségszintekkel és repülési idővel.' },
   { cim: 'Tervező', leiras: 'Napi program 1–14 napra, amit szabadon átírhatsz, bővíthetsz és elmentheted.' },
   { cim: 'Bakancslista és utazások', leiras: 'Gyűjtsd egy helyen a vágyott helyeket, a „Voltam ott” gombbal pedig átkerülnek az utazásaid közé.' },
 ]
+
+const gombLeirasok = {
+  kviz: 'Válaszolj 6 rövid kérdésre, és megmutatjuk a három legjobb úti célt.',
+  felfedezo: 'Jobbra húzod, ami tetszik, balra, ami nem.',
+}
 
 const pontok = [
   { x: 15, y: 25 },
@@ -51,16 +70,30 @@ function kovetkezoPont() {
 onMounted(() => {
   kovetkezoPont()
   idozito = window.setInterval(kovetkezoPont, 5000)
+
+  lekeres<Ut[]>('/uti-celok?nepszeru=1&limit=5')
+    .then((adat) => (utak.value = adat))
+    .catch(() => (utak.value = []))
 })
 
 onUnmounted(() => clearInterval(idozito))
+
+function profilMegnyitas() {
+  profilNyitva.value = true
+  window.scrollTo(0, 0)
+}
+
+function fooldalMegnyitas() {
+  profilNyitva.value = false
+  window.scrollTo(0, 0)
+}
 
 function kviz() {
   kvizNyitva.value = true
 }
 
-function huzogato() {
-  alert('Húzogatós keresés indul...')
+function felfedezo() {
+  alert('Felfedezős keresés indul...')
 }
 
 function tovabb() {
@@ -69,97 +102,125 @@ function tovabb() {
 </script>
 
 <template>
-  <main class="kezdolap">
-    <Menu />
+  <Menu
+    @bejelentkezes="authNyitva = true"
+    @profil="profilMegnyitas"
+    @fooldal="fooldalMegnyitas"
+  />
 
-    <svg
-      class="repulo"
-      viewBox="0 0 24 24"
-      :style="{
-        left: repulo.x + '%',
-        top: repulo.y + '%',
-        transform: `translate(-50%, -50%) rotate(${repulo.szog}deg)`,
-      }"
-    >
-      <path
-        fill="currentColor"
-        d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"
-      />
-    </svg>
+  <Profil v-if="profilNyitva" @vissza="fooldalMegnyitas" />
 
-    <h1>Tervezd meg a következő utad</h1>
-    <p>Nem tudod, hová menj? Mi segítünk választani.</p>
+  <template v-else>
+    <main class="kezdolap">
+      <svg
+        class="repulo"
+        viewBox="0 0 24 24"
+        :style="{
+          left: repulo.x + '%',
+          top: repulo.y + '%',
+          transform: `translate(-50%, -50%) rotate(${repulo.szog}deg)`,
+        }"
+      >
+        <path
+          fill="currentColor"
+          d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"
+        />
+      </svg>
 
-    <div class="gombok">
-      <button class="gomb" @click="kviz">Kvíz</button>
-      <button class="gomb" @click="huzogato">Húzogató</button>
-    </div>
+      <h1>Tervezd meg a következő utad</h1>
+      <p>Nem tudod, hová menj? Mi segítünk választani.</p>
 
-    <button class="tovabb" @click="tovabb">
-      <span>Tovább</span>
-      <span class="nyil">⌄</span>
-    </button>
-  </main>
-  <section class="bemutatkozas">
-    <div class="szoveg">
-      <h2>Mi az a Merre utazzak?</h2>
-      <p>
-        Magyar nyelvű utazásinspiráló és -tervező oldal. Segít kitalálni, hová
-        utazz, megírja a napi programot, és egy helyen tartja a bakancslistádat
-        és az emlékeidet. Az árak és a repülési idők magyarországi utazóra
-        vonatkoznak.
-      </p>
-    </div>
-
-    <div class="funkciok">
-      <div v-for="(f, i) in funkciok" :key="i" class="funkcio">
-        <span class="szam">0{{ i + 1 }}</span>
-        <h3>{{ f.cim }}</h3>
-        <p>{{ f.leiras }}</p>
-      </div>
-    </div>
-  </section>
-  
-  <section ref="masodik" class="masodik">
-    <div class="fejlec">
-      <div>
-        <h2>Legnépszerűbb utazásaink</h2>
-        <p>Gondosan válogatott úti célok, amelyeket az utazók szeretnek</p>
-      </div>
-      <button class="osszes">Összes úti cél megtekintése</button>
-    </div>
-
-    <div class="kartyak">
-      <article v-for="(ut, i) in utak" :key="i" class="kartya">
-        <div class="kep">
-          <img v-if="ut.kep" :src="ut.kep" :alt="ut.nev" />
-          <span v-if="ut.cimke" class="cimke">{{ ut.cimke }}</span>
-          <div v-if="ut.ar" class="ar">Tól <strong>{{ ut.ar }}</strong> /nap</div>
+      <div class="gombok">
+        <div class="tip-wrap">
+          <button class="gomb" @click="kviz">Kvíz</button>
+          <span class="tip" role="tooltip">{{ gombLeirasok.kviz }}</span>
         </div>
-
-        <h3>{{ ut.nev }}</h3>
-        <p class="hely">{{ ut.orszag }} {{ ut.idojaras }}</p>
-        <div class="cimkek">
-          <span v-for="c in ut.cimkek" :key="c">{{ c }}</span>
+        <div class="tip-wrap">
+          <button class="gomb" @click="felfedezo">Felfedező</button>
+          <span class="tip" role="tooltip">{{ gombLeirasok.felfedezo }}</span>
         </div>
-      </article>
-    </div>
-  </section>
+      </div>
 
-  <section class="felhivas">
-    <h2>Készen állsz a következő utazásra?</h2>
-    <p>Válaszolj 6 rövid kérdésre, és megmutatjuk, hová érdemes utaznod.</p>
-    <button class="gomb" @click="kviz">Kitöltöm a kvízt!</button>
-  </section>
+      <button class="tovabb" @click="tovabb">
+        <span>Tovább</span>
+        <span class="nyil">⌄</span>
+      </button>
+    </main>
 
-  <section class="huzogato">
-    <h2>Bővíteni akarod a bakancs listád?</h2>
-    <p>Huzd jobbra azokat az utazasokat amik teteszenek és balra azokat amik nem.</p>
-    <button class="gomb" @click="huzogato">Bővítem a bakancs listát!</button>
-  </section>
+    <section class="bemutatkozas">
+      <div class="szoveg">
+        <h2>Mi az a Merre utazzak?</h2>
+        <p>
+          Magyar nyelvű utazásinspiráló és -tervező oldal. Segít kitalálni, hová
+          utazz, megírja a napi programot, és egy helyen tartja a bakancslistádat
+          és az emlékeidet. Az árak és a repülési idők magyarországi utazóra
+          vonatkoznak.
+        </p>
+      </div>
+
+      <div class="funkciok">
+        <div v-for="(f, i) in funkciok" :key="i" class="funkcio">
+          <span class="szam">0{{ i + 1 }}</span>
+          <h3>{{ f.cim }}</h3>
+          <p>{{ f.leiras }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section ref="masodik" class="masodik">
+      <div class="fejlec">
+        <div>
+          <h2>Legnépszerűbb utazásaink</h2>
+          <p>Gondosan válogatott úti célok, amelyeket az utazók szeretnek</p>
+        </div>
+        <button class="osszes">Összes úti cél megtekintése</button>
+      </div>
+
+      <div class="kartyak">
+        <article v-for="ut in utak" :key="ut.id" class="kartya">
+          <div class="kep">
+            <img v-if="ut.kep" :src="ut.kep" :alt="ut.nev" />
+            <span v-if="ut.cimke" class="cimke">{{ ut.cimke }}</span>
+            <div v-if="ut.ar" class="ar">Tól <strong>{{ ut.ar.toLocaleString('hu-HU') }} Ft</strong> /nap</div>
+          </div>
+
+          <h3>{{ ut.nev }}</h3>
+          <p class="hely">{{ ut.orszag }} {{ ut.idojaras }}</p>
+          <div class="cimkek">
+            <span v-for="c in ut.cimkek" :key="c">{{ c }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="kartya-szekcio">
+      <div class="szekcio-fejlec">
+        <h2>Fő funkcióink</h2>
+        <p>Ezek az oldal legfőbb részei.</p>
+      </div>
+
+      <div class="info-kartya vilagos">
+        <span class="felirat">Utazási kvíz</span>
+        <h2>Készen állsz a következő utazásra?</h2>
+        <div class="sor">
+          <p>Válaszolj 6 rövid kérdésre, és megmutatjuk, hová érdemes utaznod.</p>
+          <button class="gomb" @click="kviz">Kitöltöm a kvízt! <span>→</span></button>
+        </div>
+      </div>
+
+      <div class="info-kartya szurke">
+        <span class="felirat">Felfedező</span>
+        <h2>Bővíteni akarod a bakancslistád?</h2>
+        <p>Húzd jobbra azokat az utazásokat, amik tetszenek, és balra azokat, amik nem.</p>
+        <button class="gomb" @click="felfedezo">Bővítem a bakancslistát! <span>→</span></button>
+      </div>
+    </section>
+  </template>
+
   <Footer />
 
   <Kviz v-if="kvizNyitva" @bezar="kvizNyitva = false" />
+  <Bejelentkezes v-if="authNyitva" @bezar="authNyitva = false" />
 </template>
 
 <style>
@@ -457,71 +518,143 @@ html, body, #app {
   color: #000;
 }
 
-.felhivas {
-  padding: 5rem max(2rem, calc((100% - 70rem) / 2));
-  text-align: left;
-  color: #000;
+.kartya-szekcio {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 4rem max(2rem, calc((100% - 70rem) / 2));
   background: white;
+  color: #000;
 }
 
-.felhivas h2 {
-  margin: 0 0 1rem;
+.szekcio-fejlec {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.szekcio-fejlec h2 {
+  margin: 0;
   font-size: 2.5rem;
 }
 
-.felhivas p {
-  margin: 0 0 2rem;
-  font-size: 1.1rem;
+.szekcio-fejlec p {
+  margin: 0.5rem 0 0;
   color: #000;
 }
 
-.felhivas .gomb {
+.info-kartya {
+  padding: 2rem 1.75rem;
+  color: #000;
+  text-align: left;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+}
+
+.info-kartya.vilagos { background: #fafafa; }
+.info-kartya.szurke  { background: #ececec; }
+
+.felirat {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.info-kartya h2 {
+  margin: 0 0 1rem;
+  font-size: 2.5rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.info-kartya p {
+  margin: 0;
+  font-size: 1rem;
+  color: #000;
+}
+
+.info-kartya .sor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.info-kartya .gomb {
+  padding: 0.9rem 1.6rem;
+  font-size: 1.1rem;
   color: white;
   background: #12222c;
   border: none;
 }
 
-.felhivas .gomb:hover {
+.info-kartya.szurke .gomb {
+  margin-top: 1.5rem;
+}
+
+.info-kartya .gomb:hover {
   background: #1f3a4a;
+}
+
+.info-kartya .gomb span {
+  margin-left: 0.4rem;
 }
 
 @media (max-width: 600px) {
   .funkciok {
     grid-template-columns: 1fr;
   }
-}
 
-.huzogato {
-  padding: 5rem max(2rem, calc((100% - 70rem) / 2));
-  text-align: left;
-  color: #000;
-  background: white;
-}
-
-.huzogato h2 {
-  margin: 0 0 1rem;
-  font-size: 2.5rem;
-}
-
-.huzogato p {
-  margin: 0 0 2rem;
-  font-size: 1.1rem;
-  color: #000;
-}
-
-.huzogato .gomb {
-  color: white;
-  background: #12222c;
-  border: none;
-}
-
-.huzogato .gomb:hover {
-  background: #1f3a4a;
-}
-
-@media (max-width: 600px) {
-  .funkciok {
-    grid-template-columns: 1fr;
+  .szekcio-fejlec h2 {
+    font-size: 1.8rem;
   }
+
+  .info-kartya h2 {
+    font-size: 1.8rem;
+  }
+}
+
+.tip-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.tip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: white;
+  background: #1f2430;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+}
+
+.tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1f2430;
+}
+
+.tip-wrap:hover .tip,
+.tip-wrap:has(:focus-visible) .tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 </style>

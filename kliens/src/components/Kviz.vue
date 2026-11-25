@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { lekeres } from '../api'
 
 const emit = defineEmits<{ bezar: [] }>()
+
+interface UtiCel {
+  id: number
+  nev: string
+  orszag: string
+  szezon: string | null
+  koltseg: string | null
+  kviz_cimkek: string[]
+}
 
 const kerdesek = [
   {
@@ -54,25 +64,27 @@ const kerdesek = [
   },
 ]
 
-// Egyelőre minta adatok, később jöhetnek az adatbázisból
-const uticelok = [
-  { nev: 'Róma', orszag: 'Olaszország', szezon: 'ápr–jún, szept–okt', koltseg: '€€', cimkek: ['varos', 'kultura', 'enyhe', 'arkozepes', 'gasztro', 'rovid'] },
-  { nev: 'Santorini', orszag: 'Görögország', szezon: 'máj–okt', koltseg: '€€€', cimkek: ['tenger', 'pihenes', 'meleg', 'dragabb', 'nyugi', 'kozepes'] },
-  { nev: 'Zermatt', orszag: 'Svájc', szezon: 'jún–szept', koltseg: '€€€', cimkek: ['hegy', 'kaland', 'hideg', 'dragabb', 'nyugi', 'rovid'] },
-  { nev: 'Barcelona', orszag: 'Spanyolország', szezon: 'máj–okt', koltseg: '€€', cimkek: ['varos', 'tenger', 'kultura', 'meleg', 'arkozepes', 'buli', 'kozepes'] },
-  { nev: 'Dolomitok', orszag: 'Olaszország', szezon: 'jún–szept', koltseg: '€€', cimkek: ['hegy', 'kaland', 'hideg', 'arkozepes', 'gasztro', 'rovid'] },
-  { nev: 'Isztambul', orszag: 'Törökország', szezon: 'ápr–máj, szept–nov', koltseg: '€', cimkek: ['varos', 'kultura', 'enyhe', 'olcso', 'gasztro', 'kozepes'] },
-  { nev: 'Kréta', orszag: 'Görögország', szezon: 'máj–okt', koltseg: '€€', cimkek: ['tenger', 'pihenes', 'meleg', 'arkozepes', 'gasztro', 'kozepes'] },
-  { nev: 'Prága', orszag: 'Csehország', szezon: 'ápr–okt', koltseg: '€', cimkek: ['varos', 'kultura', 'enyhe', 'olcso', 'buli', 'rovid'] },
-]
+const uticelok = ref<UtiCel[]>([])
+const betolt = ref(true)
+const hiba = ref('')
+
+onMounted(async () => {
+  try {
+    uticelok.value = await lekeres<UtiCel[]>('/uti-celok?limit=500')
+  } catch {
+    hiba.value = 'Nem sikerült betölteni az úti célokat. Fut a szerver?'
+  } finally {
+    betolt.value = false
+  }
+})
 
 const valasztottak = ref<string[]>([])
 const aktualis = computed(() => kerdesek[valasztottak.value.length])
 
 const legjobbak = computed(() =>
-  uticelok
+  uticelok.value
     .map((u) => {
-      const egyezes = valasztottak.value.filter((c) => u.cimkek.includes(c)).length
+      const egyezes = valasztottak.value.filter((c) => u.kviz_cimkek.includes(c)).length
       return { ...u, szazalek: Math.round((egyezes / kerdesek.length) * 100) }
     })
     .sort((a, b) => b.szazalek - a.szazalek)
@@ -120,16 +132,23 @@ function ujra() {
       <template v-else>
         <h3>A három legjobb úti célod</h3>
 
-        <div v-for="(u, i) in legjobbak" :key="u.nev" class="talalat">
-          <span class="helyezes">{{ i + 1 }}</span>
-          <div class="adatok">
-            <strong>{{ u.nev }}, {{ u.orszag }}</strong>
-            <small>Szezon: {{ u.szezon }} · Költség: {{ u.koltseg }}</small>
-          </div>
-          <span class="szazalek">{{ u.szazalek }}%</span>
-        </div>
+        <p v-if="betolt" class="uzenet">Betöltés...</p>
+        <p v-else-if="hiba" class="uzenet hiba">{{ hiba }}</p>
+        <p v-else-if="legjobbak.length === 0" class="uzenet">Még nincs úti cél az adatbázisban.</p>
 
-        <p class="jelmagyarazat">€ olcsó · €€ közepes · €€€ drágább</p>
+        <template v-else>
+          <div v-for="(u, i) in legjobbak" :key="u.id" class="talalat">
+            <span class="helyezes">{{ i + 1 }}</span>
+            <div class="adatok">
+              <strong>{{ u.nev }}, {{ u.orszag }}</strong>
+              <small>Szezon: {{ u.szezon ?? '–' }} · Költség: {{ u.koltseg ?? '–' }}</small>
+            </div>
+            <span class="szazalek">{{ u.szazalek }}%</span>
+          </div>
+
+          <p class="jelmagyarazat">€ olcsó · €€ közepes · €€€ drágább</p>
+        </template>
+
         <button class="valasz kozep" @click="ujra">Újra kitöltöm</button>
       </template>
     </div>
@@ -227,6 +246,18 @@ h3 {
   background: none;
   border: none;
   cursor: pointer;
+}
+
+.uzenet {
+  margin: 1rem 0;
+  color: #000;
+}
+
+.hiba {
+  padding: 0.6rem 0.8rem;
+  color: #8a1c1c;
+  background: #fdecec;
+  border-radius: 8px;
 }
 
 .talalat {

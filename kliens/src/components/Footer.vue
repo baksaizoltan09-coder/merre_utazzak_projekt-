@@ -26,7 +26,7 @@ const linkek = ['Főoldal', 'Úti célok', 'Kvíz', 'Húzogató', 'Tervező', 'B
   padding: 3rem max(2rem, calc((100% - 70rem) / 2)) 1.5rem;
   text-align: left;
   color: white;
-  background: #12222c;
+  background: black;
 }
 
 .tartalom {

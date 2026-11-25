@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { felhasznalo } from '../auth'
 
+const emit = defineEmits<{
+  (e: 'bejelentkezes'): void
+  (e: 'profil'): void
+  (e: 'fooldal'): void
+}>()
 const aktiv = ref('Főoldal')
-const linkek = ['Főoldal', 'Úti célok', 'Kvíz', 'Húzogató', 'Tervező', 'Bakancslista']
+const linkek = ['Főoldal', 'Úti célok', 'Kvíz', 'Felfedező', 'Tervező', 'Bakancslista']
 
 const legordult = ref(false)
 const nyitva = ref(false)
@@ -14,6 +20,18 @@ function onScroll() {
 function valaszt(link: string) {
   aktiv.value = link
   nyitva.value = false
+  if (link === 'Főoldal') emit('fooldal')
+}
+
+function bejelentkezes() {
+  nyitva.value = false
+  emit('bejelentkezes')
+}
+
+function profil() {
+  aktiv.value = ''
+  nyitva.value = false
+  emit('profil')
 }
 
 function onKey(e: KeyboardEvent) {
@@ -34,24 +52,50 @@ onUnmounted(() => {
 
 <template>
   <nav class="menu" :class="{ legordult, nyitva }">
-    <div class="tartalom">
-      <span
-        v-for="link in linkek"
-        :key="link"
-        class="link"
-        :class="{ aktiv: aktiv === link }"
-        @click="valaszt(link)"
-      >
-        {{ link }}
-      </span>
-
-      <div class="pirula">
-        🔍 <input placeholder="Keresés" /> <kbd>/</kbd>
-      </div>
-      <button class="pirula">🌐 magyar ⌄</button>
-    </div>
-
     <img class="logo" src="/favicon.png" alt="Merre utazzak" />
+
+    <div class="tartalom">
+      <div class="linkek">
+        <span
+          v-for="link in linkek"
+          :key="link"
+          class="link"
+          :class="{ aktiv: aktiv === link }"
+          @click="valaszt(link)"
+        >
+          {{ link }}
+        </span>
+      </div>
+
+      <div class="jobb">
+        <button v-if="felhasznalo" class="pirula" aria-label="Profil" @click="profil">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          </svg>
+          {{ felhasznalo.name }}
+        </button>
+        <button v-else class="pirula" aria-label="Bejelentkezés" @click="bejelentkezes">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          </svg>
+        </button>
+        <button class="pirula" aria-label="Nyelv">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
 
     <button
       class="hamburger"
@@ -82,20 +126,44 @@ onUnmounted(() => {
   transition: background 0.25s ease, padding 0.25s ease, box-shadow 0.25s ease;
 }
 
+.menu.legordult {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background: black;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.logo {
+  height: 2.5rem;
+  width: 2.5rem;
+  object-fit: contain;
+}
+
 .tartalom {
-  display: contents;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.linkek {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.jobb {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .hamburger {
   display: none;
-}
-
-.menu.legordult {
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-  background: rgba(20, 30, 48, 0.92);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
 .link {
@@ -112,40 +180,28 @@ onUnmounted(() => {
 .pirula {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
   color: white;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
 }
 
-input {
-  width: 7rem;
-  color: white;
-  font-size: 1rem;
-  background: none;
-  border: none;
-  outline: none;
+.pirula svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
-input::placeholder {
-  color: white;
+button.pirula {
+  cursor: pointer;
 }
 
-kbd {
-  padding: 0 0.5rem;
-  border: 1px solid white;
-  border-radius: 6px;
-}
-
-.logo {
-  height: 2.5rem;
-  width: 2.5rem;
-  margin-left: auto;
-  object-fit: contain;
+button.pirula:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 @media (max-width: 768px) {
@@ -157,11 +213,6 @@ kbd {
     background: rgba(20, 30, 48, 0.97);
   }
 
-  .logo {
-    order: -1;
-    margin-left: 0;
-  }
-
   .hamburger {
     display: flex;
     flex-direction: column;
@@ -171,8 +222,8 @@ kbd {
     height: 2.75rem;
     padding: 0.6rem;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: black;
+    border: 1px solid black;
     border-radius: 999px;
   }
 
@@ -208,12 +259,19 @@ kbd {
     max-height: calc(100vh - 4.5rem);
     padding: 1rem 2rem 1.5rem;
     overflow-y: auto;
-    background: rgba(20, 30, 48, 0.97);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    background: black;
+    box-shadow: 0 8px 16px black;
   }
 
   .nyitva .tartalom {
     display: flex;
+  }
+
+  .linkek {
+    grid-column: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
   }
 
   .link {
@@ -225,14 +283,10 @@ kbd {
     color: #ffc107;
   }
 
-  input {
-    flex: 1;
-    width: auto;
-    min-width: 0;
-  }
-
-  button.pirula {
-    align-self: flex-start;
+  .jobb {
+    grid-column: auto;
+    justify-self: stretch;
+    justify-content: space-between;
   }
 }
 </style>
